@@ -4,14 +4,16 @@ import (
 	"net/http"
 	"database/sql"
 	"fmt"
+	"errors"
 
 	"github.com/gin-gonic/gin"
+	"github.com/techschool/simplebank/token"
 	db "github.com/techschool/simplebank/db/sqlc"
 )
 
 type transferRequest struct {
-	FromAccountID int64 `json:"from_account_id" binding="required,min=1"`
-	ToAccountID int64 `json:"to_account_id" binding="required,min=1"`
+	FromAccountID int64 `json:"from_account_id" binding:"required,min=1"`
+	ToAccountID int64 `json:"to_account_id" binding:"required,min=1"`
 	Amount int64 `json:"amount" binding:"required,gt=0"`
 	Currency string `json:"currency" binding:"required,currency"`
 }

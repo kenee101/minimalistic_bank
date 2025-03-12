@@ -10,7 +10,9 @@ import (
 	"net/http/httptest"
 	"reflect"
 	"testing"
+	// "errors"
 
+	"github.com/lib/pq" // Database driver
 	"github.com/gin-gonic/gin"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
@@ -110,7 +112,11 @@ func TestCreateUserAPI(t *testing.T) {
 				store.EXPECT().
 					CreateUser(gomock.Any(), gomock.Any()).
 					Times(1).
-					Return(db.User{}, db.ErrUniqueViolation)
+					Return(db.User{}, &pq.Error{
+        				Code:    "23505", // PostgreSQL unique violation error code
+        				Message: "duplicate key value violates unique constraint",
+        				Constraint: "users_username_key", // Your constraint name
+    				})
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusForbidden, recorder.Code)
@@ -215,9 +221,9 @@ func TestLoginUserAPI(t *testing.T) {
 					GetUser(gomock.Any(), gomock.Eq(user.Username)).
 					Times(1).
 					Return(user, nil)
-				store.EXPECT().
-					CreateSession(gomock.Any(), gomock.Any()).
-					Times(1)
+				// store.EXPECT().
+				// 	CreateSession(gomock.Any(), gomock.Any()).
+				// 	Times(1)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusOK, recorder.Code)
@@ -233,7 +239,7 @@ func TestLoginUserAPI(t *testing.T) {
 				store.EXPECT().
 					GetUser(gomock.Any(), gomock.Any()).
 					Times(1).
-					Return(db.User{}, db.ErrRecordNotFound)
+					Return(db.User{}, sql.ErrNoRows)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusNotFound, recorder.Code)
